@@ -2,7 +2,15 @@ use std::io;
 
 fn main() -> io::Result<()> {
     let input = include_str!("input/day01/input.txt");
-    Ok(println!("{}", input))
+    Ok(println!("part 1: {}", solve1(input)))
+}
+
+fn solve1(lines: &str) -> u64 {
+    lines
+        .lines()
+        .map(|line| find_digits(line))
+        .map(CalibrationDigits::combine)
+        .sum()
 }
 
 struct CalibrationDigits(char, char);
