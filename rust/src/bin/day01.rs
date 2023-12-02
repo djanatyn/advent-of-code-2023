@@ -18,8 +18,7 @@ fn solve1(lines: &str) -> u64 {
 fn solve2(lines: &str) -> u64 {
     lines
         .lines()
-        .map(|line| dbg!(translate_words(line)))
-        .map(|line| find_digits(line.as_str()))
+        .map(|line| find_matches(line))
         .map(CalibrationDigits::combine)
         .sum()
 }
@@ -29,10 +28,7 @@ struct CalibrationDigits(char, char);
 
 fn find_digits(line: &str) -> CalibrationDigits {
     let digits: Vec<char> = line.chars().filter(|c| c.is_ascii_digit()).collect();
-    dbg!(CalibrationDigits(
-        *digits.first().unwrap(),
-        *digits.last().unwrap()
-    ))
+    CalibrationDigits(*digits.first().unwrap(), *digits.last().unwrap())
 }
 
 impl CalibrationDigits {
@@ -42,37 +38,53 @@ impl CalibrationDigits {
     }
 }
 
-const REPLACEMENTS: [(&str, &str); 9] = [
-    ("one", "1"),
-    ("two", "2"),
-    ("three", "3"),
-    ("four", "4"),
-    ("five", "5"),
-    ("six", "6"),
-    ("seven", "7"),
-    ("eight", "8"),
-    ("nine", "9"),
+const REPLACEMENTS: [(&str, char); 9] = [
+    ("one", '1'),
+    ("two", '2'),
+    ("three", '3'),
+    ("four", '4'),
+    ("five", '5'),
+    ("six", '6'),
+    ("seven", '7'),
+    ("eight", '8'),
+    ("nine", '9'),
 ];
 
-fn translate_words<S: AsRef<str>>(line: S) -> String {
+struct Match {
+    index: usize,
+    value: char,
+}
+
+pub struct Matches(Vec<Match>);
+
+fn find_matches<S: AsRef<str>>(line: S) -> CalibrationDigits {
     let line = line.as_ref();
-    let replacement = REPLACEMENTS.iter().fold(
-        None,
-        |acc: Option<(usize, &str, &str)>, (find, replace): &(&str, &str)| {
-            let idx = match line.find(find) {
-                None => return acc,
-                Some(idx) => idx,
-            };
-            match acc {
-                None => Some((idx, find, replace)),
-                Some((previous_idx, _, _)) if idx < previous_idx => Some((idx, find, replace)),
-                Some((_, _, _)) => acc,
-            }
-        },
-    );
-    match replacement {
-        None => line.to_string(),
-        Some((_, find, replace)) => translate_words(line.replacen(find, replace, 1).as_str()),
+    let mut matches = vec![];
+    // find matches for every word
+    for (pattern, value) in REPLACEMENTS {
+        let mut found: Vec<Match> = line
+            .match_indices(pattern)
+            .map(|(index, _)| Match { index, value })
+            .collect();
+        matches.append(&mut found);
+    }
+    // find matches for all digits
+    let mut digit_matches: Vec<Match> = line
+        .match_indices(|c: char| c.is_ascii_digit())
+        .map(|(index, value)| Match {
+            index,
+            value: value.chars().nth(0).unwrap(),
+        })
+        .collect();
+    matches.append(&mut digit_matches);
+    Matches(matches).calibration_digits()
+}
+
+impl Matches {
+    fn calibration_digits(&mut self) -> CalibrationDigits {
+        self.0
+            .sort_by(|a, b| a.index.partial_cmp(&b.index).unwrap());
+        CalibrationDigits(self.0.first().unwrap().value, self.0.last().unwrap().value)
     }
 }
 
@@ -90,26 +102,5 @@ fn example01() {
 #[test]
 fn example02() {
     let example = include_str!("input/day01/example02.txt");
-    let translation: Vec<CalibrationDigits> = example
-        .lines()
-        .map(|line| translate_words(line))
-        .map(|line| find_digits(line.as_str()))
-        .collect();
-    assert_eq!(
-        translation,
-        vec![
-            CalibrationDigits('2', '9'),
-            CalibrationDigits('8', '3'),
-            CalibrationDigits('1', '3'),
-            CalibrationDigits('2', '4'),
-            CalibrationDigits('4', '2'),
-            CalibrationDigits('1', '4'),
-            CalibrationDigits('7', '6'),
-        ]
-    );
-    let result: u64 = translation
-        .into_iter()
-        .map(CalibrationDigits::combine)
-        .sum();
-    assert_eq!(result, 281);
+    assert_eq!(solve2(example), 281);
 }
