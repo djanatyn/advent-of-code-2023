@@ -5,6 +5,7 @@ use std::io;
 fn main() -> io::Result<()> {
     let input = include_str!("input/day02/input.txt");
     println!("part 1: {}", solve1(input));
+    println!("part 2: {}", solve2(input));
     Ok(())
 }
 
@@ -15,6 +16,46 @@ fn solve1(lines: &str) -> u64 {
         .filter(|record| !GameRecord::invalid(record))
         .map(|record| record.id)
         .sum()
+}
+
+fn solve2(lines: &str) -> u64 {
+    lines
+        .lines()
+        .map(|line| GameRecord::try_from(line).unwrap())
+        .map(FewestCubes::from)
+        .map(FewestCubes::power)
+        .sum()
+}
+
+#[derive(Debug)]
+struct FewestCubes {
+    red: u64,
+    green: u64,
+    blue: u64,
+}
+
+impl From<GameRecord> for FewestCubes {
+    fn from(game: GameRecord) -> Self {
+        let mut red: u64 = 0;
+        let mut green: u64 = 0;
+        let mut blue: u64 = 0;
+        for reveal in game.reveals {
+            for cube in reveal.0 {
+                match cube {
+                    Red(count) => red = red.max(count),
+                    Green(count) => green = green.max(count),
+                    Blue(count) => blue = blue.max(count),
+                }
+            }
+        }
+        FewestCubes { red, green, blue }
+    }
+}
+
+impl FewestCubes {
+    fn power(self) -> u64 {
+        self.red * self.green * self.blue
+    }
 }
 
 #[derive(Parser)]
