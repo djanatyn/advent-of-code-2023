@@ -24,6 +24,16 @@ const NEIGHBORS: [Coord; 8] = [
     Coord(1, 1),
 ];
 
+impl From<char> for Cell {
+    fn from(value: char) -> Self {
+        match value {
+            '0' | '1' | '2' | '3' | '4' | '5' | '6' | '7' | '8' | '9' => Self::Number(value),
+            '.' => Self::Empty,
+            _ => Self::Symbol,
+        }
+    }
+}
+
 impl Coord {
     fn add(&self, addend: &Coord) -> Self {
         let Coord(x1, y1) = self;
@@ -34,13 +44,13 @@ impl Coord {
 
 #[derive(Debug, PartialEq)]
 enum Cell {
-    Number(String),
+    Number(char),
     Symbol,
     Empty,
 }
 
 fn parse_row<S: AsRef<str>>(line: S) -> Vec<Cell> {
-    todo!()
+    line.as_ref().chars().map(Into::<Cell>::into).collect()
 }
 
 #[derive(Debug)]
@@ -63,14 +73,14 @@ fn row() {
     assert_eq!(
         parse_row(row),
         vec![
-            Number("4".to_string()),
-            Number("6".to_string()),
-            Number("7".to_string()),
+            Number('4'),
+            Number('6'),
+            Number('7'),
             Empty,
             Empty,
-            Number("1".to_string()),
-            Number("1".to_string()),
-            Number("4".to_string()),
+            Number('1'),
+            Number('1'),
+            Number('4'),
             Empty,
             Empty
         ]
