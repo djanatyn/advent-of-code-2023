@@ -1,0 +1,9 @@
+id = { ASCII_DIGIT+ }
+count = { ASCII_DIGIT+ }
+color = { "red" | "blue" | "green" }
+// 1 blue
+show = { count ~ " " ~ color ~ ", "* }
+// 1 blue, 2 green;
+reveal = { show+ ~ "; "* }
+// Game 23: 1 blue, 2 green; 7 red, 5 blue
+game = { "Game " ~ id ~ ": " ~ reveal+ }
