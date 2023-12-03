@@ -9,7 +9,12 @@ fn main() -> io::Result<()> {
 }
 
 fn solve1(lines: &str) -> u64 {
-    todo!();
+    lines
+        .lines()
+        .map(|line| GameRecord::try_from(line).unwrap())
+        .filter(|record| !GameRecord::invalid(record))
+        .map(|record| record.id)
+        .sum()
 }
 
 #[derive(Parser)]
@@ -23,6 +28,20 @@ enum Cubes {
     Blue(u64),
 }
 
+impl Cubes {
+    const NUM_RED_CUBES: u64 = 12;
+    const NUM_GREEN_CUBES: u64 = 13;
+    const NUM_BLUE_CUBES: u64 = 14;
+
+    fn invalid(&self) -> bool {
+        match self {
+            Red(count) => count > &Self::NUM_RED_CUBES,
+            Green(count) => count > &Self::NUM_GREEN_CUBES,
+            Blue(count) => count > &Self::NUM_BLUE_CUBES,
+        }
+    }
+}
+
 #[derive(Debug, PartialEq)]
 struct Reveal(Vec<Cubes>);
 
@@ -30,6 +49,14 @@ struct Reveal(Vec<Cubes>);
 struct GameRecord {
     id: u64,
     reveals: Vec<Reveal>,
+}
+
+impl GameRecord {
+    fn invalid(&self) -> bool {
+        self.reveals
+            .iter()
+            .any(|reveal| reveal.0.iter().any(Cubes::invalid))
+    }
 }
 
 impl TryFrom<&str> for GameRecord {
@@ -93,6 +120,6 @@ fn parse_line() {
 
 #[test]
 fn example01() {
-    let example = include_str!("input/day01/example01.txt");
-    assert_eq!(solve1(example), todo!());
+    let example = include_str!("input/day02/example01.txt");
+    assert_eq!(solve1(example), 8);
 }
