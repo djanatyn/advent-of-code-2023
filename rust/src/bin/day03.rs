@@ -52,26 +52,56 @@ impl From<&str> for Grid {
     }
 }
 
-fn validate
-
 impl Grid {
+    /// Bounds checking required.
+    fn validate(&self, check: &[Coord]) -> bool {
+        adjacent_cells(check).iter().any(|Coord(x, y)| {
+            if let Some(row) = self.0.get(*y as usize) {
+                if let Some(cell) = row.get(*x as usize) {
+                    return matches!(cell, Cell::Symbol);
+                }
+            }
+            return false;
+        })
+    }
+
     fn part_numbers(&self) -> Vec<PartNumber> {
         let mut part_numbers: Vec<PartNumber> = Vec::new();
         for (y, row) in self.0.iter().enumerate() {
-            let mut potential_part_number: Vec<(Coord, &Cell)> = Vec::new();
+            let mut potential_part_number: Vec<char> = Vec::new();
+            let mut potential_part_number_coords: Vec<Coord> = Vec::new();
             for (x, cell) in row.iter().enumerate() {
                 match cell {
                     Cell::Number(value) => {
-                        potential_part_number.push((Coord(x as i64, y as i64), cell))
+                        potential_part_number.push(*value);
+                        potential_part_number_coords.push(Coord(x as i64, y as i64));
                     }
                     Cell::Empty | Cell::Symbol if !potential_part_number.is_empty() => {
-                        todo!("validate part number");
+                        if self.validate(&potential_part_number_coords) {
+                            part_numbers.push(PartNumber(
+                                potential_part_number
+                                    .iter()
+                                    .collect::<String>()
+                                    .parse::<u64>()
+                                    .unwrap(),
+                            ));
+                        }
+                        potential_part_number.clear();
+                        potential_part_number_coords.clear();
                     }
                     _ => continue,
                 }
             }
-            if !potential_part_number.is_empty() {
-                todo!("validate part number");
+            if !potential_part_number.is_empty() && self.validate(&potential_part_number_coords) {
+                part_numbers.push(PartNumber(
+                    potential_part_number
+                        .iter()
+                        .collect::<String>()
+                        .parse::<u64>()
+                        .unwrap(),
+                ));
+                potential_part_number.clear();
+                potential_part_number_coords.clear();
             }
         }
         part_numbers
@@ -82,6 +112,7 @@ fn parse_row<S: AsRef<str>>(line: S) -> Vec<Cell> {
     line.as_ref().chars().map(Into::<Cell>::into).collect()
 }
 
+/// May return invalid bounds.
 fn adjacent_cells(coords: &[Coord]) -> BTreeSet<Coord> {
     let mut adjacent = BTreeSet::new();
     for neighbor in NEIGHBORS {
@@ -99,7 +130,10 @@ fn main() {
 
 fn solve1(lines: &str) -> u64 {
     let grid = Grid::from(lines);
-    todo!()
+    grid.part_numbers()
+        .iter()
+        .map(|part_number| part_number.0)
+        .sum()
 }
 
 #[test]
