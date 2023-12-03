@@ -1,6 +1,6 @@
 use std::collections::BTreeSet;
 
-#[derive(Debug, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Debug, PartialEq, Eq, PartialOrd, Ord, Clone)]
 struct Coord(i64, i64);
 
 // orthogonal and diagonal neighbor vectors
@@ -40,8 +40,11 @@ impl From<char> for Cell {
     }
 }
 
-#[derive(Debug)]
-struct PartNumber(u64);
+#[derive(Debug, Clone)]
+struct PartNumber {
+    value: u64,
+    symbols: Vec<Coord>,
+}
 
 #[derive(Debug)]
 struct Grid(Vec<Vec<Cell>>);
@@ -53,16 +56,23 @@ impl From<&str> for Grid {
 }
 
 impl Grid {
-    /// Bounds checking required.
-    fn validate(&self, check: &[Coord]) -> bool {
-        adjacent_cells(check).iter().any(|Coord(x, y)| {
-            if let Some(row) = self.0.get(*y as usize) {
-                if let Some(cell) = row.get(*x as usize) {
-                    return matches!(cell, Cell::Symbol);
+    fn adjacent_symbols(&self, check: &[Coord]) -> Option<Vec<Coord>> {
+        let mut gears: Vec<Coord> = Vec::new();
+        // Bounds checking required.
+        for Coord(x, y) in adjacent_cells(check) {
+            if let Some(row) = self.0.get(y as usize) {
+                if let Some(cell) = row.get(x as usize) {
+                    if let Cell::Symbol = cell {
+                        gears.push(Coord(x, y));
+                    }
                 }
             }
-            return false;
-        })
+        }
+        if gears.is_empty() {
+            None
+        } else {
+            Some(gears)
+        }
     }
 
     fn part_numbers(&self) -> Vec<PartNumber> {
@@ -77,14 +87,16 @@ impl Grid {
                         potential_part_number_coords.push(Coord(x as i64, y as i64));
                     }
                     Cell::Empty | Cell::Symbol if !potential_part_number.is_empty() => {
-                        if self.validate(&potential_part_number_coords) {
-                            part_numbers.push(PartNumber(
-                                potential_part_number
+                        if let Some(symbols) = self.adjacent_symbols(&potential_part_number_coords)
+                        {
+                            part_numbers.push(PartNumber {
+                                value: potential_part_number
                                     .iter()
                                     .collect::<String>()
                                     .parse::<u64>()
                                     .unwrap(),
-                            ));
+                                symbols,
+                            });
                         }
                         potential_part_number.clear();
                         potential_part_number_coords.clear();
@@ -92,17 +104,20 @@ impl Grid {
                     _ => continue,
                 }
             }
-            if !potential_part_number.is_empty() && self.validate(&potential_part_number_coords) {
-                part_numbers.push(PartNumber(
-                    potential_part_number
-                        .iter()
-                        .collect::<String>()
-                        .parse::<u64>()
-                        .unwrap(),
-                ));
-                potential_part_number.clear();
-                potential_part_number_coords.clear();
+            if !potential_part_number.is_empty() {
+                if let Some(symbols) = self.adjacent_symbols(&potential_part_number_coords) {
+                    part_numbers.push(PartNumber {
+                        value: potential_part_number
+                            .iter()
+                            .collect::<String>()
+                            .parse::<u64>()
+                            .unwrap(),
+                        symbols,
+                    });
+                }
             }
+            potential_part_number.clear();
+            potential_part_number_coords.clear();
         }
         part_numbers
     }
@@ -126,14 +141,36 @@ fn adjacent_cells(coords: &[Coord]) -> BTreeSet<Coord> {
 fn main() {
     let input = include_str!("input/day03/input.txt");
     println!("part 1: {}", solve1(input));
+    println!("part 2: {}", solve2(input));
 }
 
 fn solve1(lines: &str) -> u64 {
     let grid = Grid::from(lines);
     grid.part_numbers()
         .iter()
-        .map(|part_number| part_number.0)
+        .map(|part_number| part_number.value)
         .sum()
+}
+
+fn solve2(lines: &str) -> u64 {
+    let grid = Grid::from(lines);
+    let part_numbers: Vec<PartNumber> = grid.part_numbers();
+    let potential_gears: BTreeSet<Coord> = part_numbers
+        .iter()
+        .cloned()
+        .flat_map(|part_number| part_number.symbols)
+        .collect();
+    let mut gear_ratios: Vec<u64> = Vec::new();
+    for gear in potential_gears {
+        let matching_part_numbers: Vec<&PartNumber> = part_numbers
+            .iter()
+            .filter(|part_number| part_number.symbols.contains(&gear))
+            .collect();
+        if let &[one, two] = matching_part_numbers.as_slice() {
+            gear_ratios.push(one.value * two.value);
+        }
+    }
+    gear_ratios.iter().sum()
 }
 
 #[test]
@@ -161,4 +198,10 @@ fn row() {
 fn example01() {
     let example = include_str!("input/day03/example01.txt");
     assert_eq!(solve1(example), 4361);
+}
+
+#[test]
+fn example02() {
+    let example = include_str!("input/day03/example01.txt");
+    assert_eq!(solve2(example), 467835);
 }
