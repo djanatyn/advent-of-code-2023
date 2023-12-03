@@ -1,6 +1,5 @@
 use pest::Parser;
 use pest_derive::Parser;
-use std::io;
 
 #[derive(Parser)]
 #[grammar = "bin/day02.pest"]
@@ -115,11 +114,10 @@ impl FewestCubes {
     }
 }
 
-fn main() -> io::Result<()> {
+fn main() {
     let input = include_str!("input/day02/input.txt");
     println!("part 1: {}", solve1(input));
     println!("part 2: {}", solve2(input));
-    Ok(())
 }
 
 fn solve1(lines: &str) -> u64 {
