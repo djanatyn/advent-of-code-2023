@@ -1,0 +1,20 @@
+cabal-version:      3.0
+name:               advent-of-code
+version:            0.1.0.0
+license:            MIT
+author:             Jonathan Strickland
+maintainer:         djanatyn@gmail.com
+build-type:         Simple
+
+common warnings
+    ghc-options: -Wall
+
+library
+    hs-source-dirs:   src
+    default-language: GHC2021
+    default-extensions: NoImplicitPrelude
+    build-depends:
+        base ^>=4.16.3.0,
+        relude ^>=1.2.1.0,
+        tasty ^>=1.5,
+        tasty-hunit ^>=0.10.1
