@@ -125,18 +125,21 @@ fn main() -> io::Result<()> {
 fn solve1(lines: &str) -> u64 {
     lines
         .lines()
-        .map(|line| GameRecord::try_from(line).unwrap())
-        .filter(|record| !GameRecord::invalid(record))
-        .map(|record| record.id)
+        .filter_map(|line| {
+            let record = GameRecord::try_from(line).unwrap();
+            if record.invalid() {
+                None
+            } else {
+                Some(record.id)
+            }
+        })
         .sum()
 }
 
 fn solve2(lines: &str) -> u64 {
     lines
         .lines()
-        .map(|line| GameRecord::try_from(line).unwrap())
-        .map(FewestCubes::from)
-        .map(FewestCubes::power)
+        .map(|line| FewestCubes::from(GameRecord::try_from(line).unwrap()).power())
         .sum()
 }
 
