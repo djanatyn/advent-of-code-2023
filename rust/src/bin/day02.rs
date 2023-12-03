@@ -164,3 +164,9 @@ fn example01() {
     let example = include_str!("input/day02/example01.txt");
     assert_eq!(solve1(example), 8);
 }
+
+#[test]
+fn example02() {
+    let example = include_str!("input/day02/example02.txt");
+    assert_eq!(solve2(example), 2286);
+}
