@@ -1,14 +1,5 @@
 use std::collections::BTreeSet;
 
-fn main() {
-    let input = include_str!("input/day03/input.txt");
-    println!("part 1: {}", solve1(input));
-}
-
-fn solve1(lines: &str) -> u64 {
-    todo!()
-}
-
 #[derive(Debug, PartialEq, Eq, PartialOrd, Ord)]
 struct Coord(i64, i64);
 
@@ -23,16 +14,6 @@ const NEIGHBORS: [Coord; 8] = [
     Coord(0, 1),
     Coord(1, 1),
 ];
-
-impl From<char> for Cell {
-    fn from(value: char) -> Self {
-        match value {
-            '0' | '1' | '2' | '3' | '4' | '5' | '6' | '7' | '8' | '9' => Self::Number(value),
-            '.' => Self::Empty,
-            _ => Self::Symbol,
-        }
-    }
-}
 
 impl Coord {
     fn add(&self, addend: &Coord) -> Self {
@@ -49,12 +30,57 @@ enum Cell {
     Empty,
 }
 
-fn parse_row<S: AsRef<str>>(line: S) -> Vec<Cell> {
-    line.as_ref().chars().map(Into::<Cell>::into).collect()
+impl From<char> for Cell {
+    fn from(value: char) -> Self {
+        match value {
+            '0' | '1' | '2' | '3' | '4' | '5' | '6' | '7' | '8' | '9' => Self::Number(value),
+            '.' => Self::Empty,
+            _ => Self::Symbol,
+        }
+    }
 }
 
 #[derive(Debug)]
+struct PartNumber(u64);
+
+#[derive(Debug)]
 struct Grid(Vec<Vec<Cell>>);
+
+impl From<&str> for Grid {
+    fn from(lines: &str) -> Self {
+        Self(lines.lines().map(parse_row).collect::<Vec<Vec<Cell>>>())
+    }
+}
+
+fn validate
+
+impl Grid {
+    fn part_numbers(&self) -> Vec<PartNumber> {
+        let mut part_numbers: Vec<PartNumber> = Vec::new();
+        for (y, row) in self.0.iter().enumerate() {
+            let mut potential_part_number: Vec<(Coord, &Cell)> = Vec::new();
+            for (x, cell) in row.iter().enumerate() {
+                match cell {
+                    Cell::Number(value) => {
+                        potential_part_number.push((Coord(x as i64, y as i64), cell))
+                    }
+                    Cell::Empty | Cell::Symbol if !potential_part_number.is_empty() => {
+                        todo!("validate part number");
+                    }
+                    _ => continue,
+                }
+            }
+            if !potential_part_number.is_empty() {
+                todo!("validate part number");
+            }
+        }
+        part_numbers
+    }
+}
+
+fn parse_row<S: AsRef<str>>(line: S) -> Vec<Cell> {
+    line.as_ref().chars().map(Into::<Cell>::into).collect()
+}
 
 fn adjacent_cells(coords: &[Coord]) -> BTreeSet<Coord> {
     let mut adjacent = BTreeSet::new();
@@ -64,6 +90,16 @@ fn adjacent_cells(coords: &[Coord]) -> BTreeSet<Coord> {
         }
     }
     adjacent
+}
+
+fn main() {
+    let input = include_str!("input/day03/input.txt");
+    println!("part 1: {}", solve1(input));
+}
+
+fn solve1(lines: &str) -> u64 {
+    let grid = Grid::from(lines);
+    todo!()
 }
 
 #[test]
@@ -90,5 +126,5 @@ fn row() {
 #[test]
 fn example01() {
     let example = include_str!("input/day03/example01.txt");
-    assert_eq!(solve1(example), 8);
+    assert_eq!(solve1(example), 4361);
 }
