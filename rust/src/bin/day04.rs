@@ -60,6 +60,26 @@ impl TryFrom<&str> for Card {
     }
 }
 
+impl Card {
+    fn matches(&self) -> u64 {
+        self.yours
+            .iter()
+            .filter(|yours| self.winning.contains(yours))
+            .count() as u64
+    }
+
+    fn points(&self) -> u64 {
+        let mut points = 0;
+        for iteration in 0..self.matches() {
+            match iteration {
+                0 => points = 1,
+                _ => points = points * 2,
+            }
+        }
+        points
+    }
+}
+
 impl TryFrom<&str> for Cards {
     type Error = String;
 
@@ -81,8 +101,7 @@ fn main() {
 
 fn solve1(lines: &str) -> u64 {
     let cards = Cards::try_from(lines).unwrap();
-    dbg!(cards);
-    todo!()
+    cards.0.iter().map(|card| dbg!(Card::points(card))).sum()
 }
 
 fn solve2(lines: &str) -> u64 {
@@ -93,7 +112,6 @@ fn solve2(lines: &str) -> u64 {
 fn example01() -> Result<(), String> {
     let example = include_str!("input/day04/example01.txt");
     let cards = Cards::try_from(example)?;
-    dbg!(cards);
     Ok(assert_eq!(solve1(example), 13))
 }
 
