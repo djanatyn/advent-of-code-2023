@@ -1,3 +1,5 @@
+use std::collections::VecDeque;
+
 use pest::Parser;
 use pest_derive::Parser;
 
@@ -105,7 +107,22 @@ fn solve1(lines: &str) -> u64 {
 }
 
 fn solve2(lines: &str) -> u64 {
-    todo!()
+    let cards = Cards::try_from(lines).unwrap();
+    let mut remaining_cards: VecDeque<&Card> = cards.0.iter().collect();
+    let mut card_count: u64 = 0;
+    while !remaining_cards.is_empty() {
+        let card = remaining_cards.pop_front().unwrap();
+        card_count += 1;
+        let mut additional_cards: VecDeque<&Card> = Vec::new().into();
+        for iteration in 0..card.matches() {
+            additional_cards.push_back(cards.0.get((card.id + iteration) as usize).unwrap())
+        }
+        remaining_cards.append(&mut additional_cards);
+        if card_count > 10000000 {
+            break;
+        }
+    }
+    card_count
 }
 
 #[test]
@@ -118,5 +135,5 @@ fn example01() -> Result<(), String> {
 #[test]
 fn example02() {
     let example = include_str!("input/day04/example01.txt");
-    // assert_eq!(solve2(example), 467835);
+    assert_eq!(solve2(example), 30);
 }
