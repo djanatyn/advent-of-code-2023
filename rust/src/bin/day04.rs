@@ -1,4 +1,4 @@
-use std::collections::VecDeque;
+use std::collections::HashMap;
 
 use pest::Parser;
 use pest_derive::Parser;
@@ -37,7 +37,6 @@ impl TryFrom<&str> for Card {
             .map_err(|e| e.to_string())?;
         let winning_numbers = card.next().ok_or("missing winning")?;
         let your_numbers = card.next().ok_or("missing yours")?;
-        let winning: Vec<u64> = Vec::new();
         let winning: Vec<u64> = winning_numbers
             .into_inner()
             .map(|number| {
@@ -103,33 +102,33 @@ fn main() {
 
 fn solve1(lines: &str) -> u64 {
     let cards = Cards::try_from(lines).unwrap();
-    cards.0.iter().map(|card| dbg!(Card::points(card))).sum()
+    cards.0.iter().map(|card| Card::points(card)).sum()
 }
 
 fn solve2(lines: &str) -> u64 {
     let cards = Cards::try_from(lines).unwrap();
-    let mut remaining_cards: VecDeque<&Card> = cards.0.iter().collect();
-    let mut card_count: u64 = 0;
-    while !remaining_cards.is_empty() {
-        let card = remaining_cards.pop_front().unwrap();
-        card_count += 1;
-        let mut additional_cards: VecDeque<&Card> = Vec::new().into();
-        for iteration in 0..card.matches() {
-            additional_cards.push_back(cards.0.get((card.id + iteration) as usize).unwrap())
-        }
-        remaining_cards.append(&mut additional_cards);
-        if card_count > 10000000 {
-            break;
+    let num_cards = cards.0.len();
+    // set all copies to 1
+    let mut copies: HashMap<u64, u64> = (1..=num_cards)
+        .zip(std::iter::repeat(1))
+        .map(|(id, copies)| (id as u64, copies as u64))
+        .collect();
+    for card in cards.0 {
+        let current_copies = copies.get(&card.id).unwrap().clone();
+        // increase all subsequent cards by number of copies of current card
+        for offset in 1..=card.matches() {
+            copies
+                .entry(card.id + offset)
+                .and_modify(|copies| *copies += current_copies);
         }
     }
-    card_count
+    copies.values().sum()
 }
 
 #[test]
-fn example01() -> Result<(), String> {
+fn example01() {
     let example = include_str!("input/day04/example01.txt");
-    let cards = Cards::try_from(example)?;
-    Ok(assert_eq!(solve1(example), 13))
+    assert_eq!(solve1(example), 13)
 }
 
 #[test]
