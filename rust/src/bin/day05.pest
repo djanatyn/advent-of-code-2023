@@ -1,0 +1,23 @@
+number = { " "* ~ ASCII_DIGIT+ }
+kind = { "seed" | "soil" | "fertilizer" | "water" | "light" | "temperature" | "humidity" | "location" }
+from = { kind }
+to = { kind }
+destination_start = { number }
+source_start = { number }
+range_length = { number }
+
+// seeds: 79 14 55 13
+seeds = { "seeds:" ~ number+ ~ NEWLINE+ }
+
+// seed-to-soil map:
+map_type = { from ~ "-to-" ~ to ~ " map:" ~ NEWLINE+ }
+
+// 50 98 3
+range = { destination_start ~ source_start ~ range_length ~ NEWLINE }
+
+// seed-to-soil map:
+// 50 98 2
+// 52 50 48
+map = { map_type ~ range+ ~ NEWLINE }
+
+input = { seeds ~ map+ }
