@@ -1,3 +1,10 @@
+use pest::Parser;
+use pest_derive::Parser;
+
+#[derive(Parser)]
+#[grammar = "bin/day05.pest"]
+struct InputParser;
+
 #[derive(Debug)]
 struct Seed(u64);
 
@@ -32,6 +39,26 @@ enum Kind {
     Temperature,
     Humidity,
     Location,
+}
+
+impl TryFrom<&str> for Kind {
+    type Error = String;
+
+    fn try_from(value: &str) -> Result<Self, Self::Error> {
+        use Kind::*;
+
+        match value {
+            "seed" => Ok(Seed),
+            "soil" => Ok(Soil),
+            "fertilizer" => Ok(Fertilizer),
+            "water" => Ok(Water),
+            "light" => Ok(Light),
+            "temperature" => Ok(Temperature),
+            "humidity" => Ok(Humidity),
+            "location" => Ok(Location),
+            _ => Err("invalid".into()),
+        }
+    }
 }
 
 #[derive(Debug)]
@@ -116,15 +143,75 @@ impl Input {
 impl TryFrom<&str> for Input {
     type Error = String;
 
-    fn try_from(value: &str) -> Result<Self, Self::Error> {
-        todo!()
+    fn try_from(lines: &str) -> Result<Self, Self::Error> {
+        let mut input = InputParser::parse(Rule::input, lines)
+            .map_err(|e| e.to_string())?
+            .next()
+            .ok_or("no input")?
+            .into_inner();
+        let seed_tokens = input.next().ok_or("missing seeds")?;
+        let seeds = seed_tokens
+            .into_inner()
+            .map(|number| {
+                let quantity = number
+                    .as_str()
+                    .trim()
+                    .parse::<u64>()
+                    .map_err(|e| e.to_string())?;
+                Ok(Value(quantity, Kind::Seed))
+            })
+            .collect::<Result<Vec<Value>, String>>()?;
+        let map_tokens = input.next().ok_or("missing maps")?;
+        let almanac = Almanac(
+            input
+                .map(|map| {
+                    let mut map_tokens = map.into_inner();
+                    let mut map_type = map_tokens.next().ok_or("missing type")?.into_inner();
+                    let from = Kind::try_from(map_type.next().ok_or("missing from")?.as_str())?;
+                    let to = Kind::try_from(map_type.next().ok_or("missing to")?.as_str())?;
+                    let ranges = map_tokens
+                        .map(|range| {
+                            let mut range_tokens = range.into_inner();
+                            let destination_start = range_tokens
+                                .next()
+                                .ok_or("missing destination start")?
+                                .as_str()
+                                .trim()
+                                .parse::<u64>()
+                                .map_err(|e| e.to_string())?;
+                            let source_start = range_tokens
+                                .next()
+                                .ok_or("missing source start")?
+                                .as_str()
+                                .trim()
+                                .parse::<u64>()
+                                .map_err(|e| e.to_string())?;
+                            let range_length = range_tokens
+                                .next()
+                                .ok_or("missing length")?
+                                .as_str()
+                                .trim()
+                                .parse::<u64>()
+                                .map_err(|e| e.to_string())?;
+                            Ok(Range {
+                                destination_start,
+                                source_start,
+                                range_length,
+                            })
+                        })
+                        .collect::<Result<Vec<Range>, String>>()?;
+                    Ok(Map { from, to, ranges })
+                })
+                .collect::<Result<Vec<Map>, String>>()?,
+        );
+        Ok(Self { seeds, almanac })
     }
 }
 
 #[test]
 fn example01() {
     let example = include_str!("input/day05/example01.txt");
-    let input = Input::try_from(example).unwrap();
+    let input = dbg!(Input::try_from(example).unwrap());
     assert_eq!(input.solve1(), 35);
 }
 
