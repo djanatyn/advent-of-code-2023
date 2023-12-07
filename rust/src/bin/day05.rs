@@ -16,15 +16,15 @@ struct Range {
 }
 
 impl Range {
-    fn map(&self, value: u64) -> u64 {
+    fn map(&self, value: u64) -> Option<u64> {
         let start = self.source_start;
         let end = self.source_start + (self.range_length) - 1;
 
         if start <= value && value <= end {
             let offset = value - self.source_start;
-            self.destination_start + offset
+            Some(self.destination_start + offset)
         } else {
-            value
+            None
         }
     }
 }
@@ -77,12 +77,16 @@ impl Map {
             Value(quantity, kind) if *kind == self.from => *quantity,
             _ => panic!("invalid mapping"),
         };
-        dbg!(&self.from, &self.to);
-        let result = self
+        let results = self
             .ranges
             .iter()
-            .fold(quantity, |quantity, range| dbg!(range.map(quantity)));
-        Value(result, self.to)
+            .filter_map(|range| range.map(quantity))
+            .collect::<Vec<u64>>();
+
+        match results.first() {
+            Some(result) => Value(*result, self.to),
+            None => Value(quantity, self.to),
+        }
     }
 }
 
@@ -141,7 +145,7 @@ impl Input {
             .iter()
             .map(|seed| {
                 let Value(quantity, _) = self.almanac.seed_to_location(seed);
-                dbg!(quantity)
+                quantity
             })
             .min()
             .unwrap()
@@ -218,7 +222,7 @@ impl TryFrom<&str> for Input {
 #[test]
 fn example01_seed14() {
     let example = include_str!("input/day05/example01.txt");
-    let input = dbg!(Input::try_from(example).unwrap());
+    let input = Input::try_from(example).unwrap();
     let seed = Value(14, Kind::Seed);
     let soil: Value = input
         .almanac
@@ -267,7 +271,7 @@ fn example01_seed14() {
 #[test]
 fn example01_explanation() {
     let example = include_str!("input/day05/example01.txt");
-    let input = dbg!(Input::try_from(example).unwrap());
+    let input = Input::try_from(example).unwrap();
     assert_eq!(
         input.almanac.seed_to_location(&Value(79, Kind::Seed)),
         Value(82, Kind::Location)
@@ -289,7 +293,7 @@ fn example01_explanation() {
 #[test]
 fn example01() {
     let example = include_str!("input/day05/example01.txt");
-    let input = dbg!(Input::try_from(example).unwrap());
+    let input = Input::try_from(example).unwrap();
     assert_eq!(input.solve1(), 35);
 }
 
