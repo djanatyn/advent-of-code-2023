@@ -1,3 +1,7 @@
+//! TODO: instead of operating on individual seeds, operate on ranges of seeds
+//! TODO: when given a range of seeds, first figure out which maps apply
+//! TODO: when you understand all maps that apply, fold over them (creating new ranges)
+
 use pest::Parser;
 use pest_derive::Parser;
 use std::collections::HashMap;
@@ -64,6 +68,14 @@ impl TryFrom<&str> for Kind {
 
 #[derive(Debug, Hash, PartialEq, Eq, Clone)]
 struct Value(u64, Kind);
+
+impl Value {
+    fn quantity(&self) -> u64 {
+        match self {
+            Value(quantity, _) => *quantity,
+        }
+    }
+}
 
 #[derive(Debug)]
 struct Map {
@@ -153,15 +165,33 @@ struct Input {
 
 impl Input {
     fn solve1(&self) -> u64 {
-        let mut cache = LocationCache::new();
         self.seeds
             .iter()
-            .map(|seed| {
-                let Value(quantity, _) = self.almanac.cached_to_location(&mut cache, seed);
-                quantity
+            .map(|seed| match self.almanac.to_location(seed) {
+                Value(quantity, _) => quantity,
             })
             .min()
             .unwrap()
+    }
+
+    fn part2_seeds(&self) -> Vec<Value> {
+        self.seeds
+            .windows(2)
+            .flat_map(|slice| {
+                if let [start, range] = slice {
+                    let begin = start.quantity();
+                    let end = begin + range.quantity() - 1;
+                    (begin..=end).map(|quantity| Value(quantity, Kind::Seed))
+                } else {
+                    panic!("invalid input")
+                }
+            })
+            .collect()
+    }
+
+    fn solve2(&self) -> u64 {
+        let mut cache = LocationCache::new();
+        todo!()
     }
 }
 
@@ -312,5 +342,7 @@ fn example01() {
 
 fn main() {
     let input = Input::try_from(include_str!("input/day05/input.txt")).unwrap();
+    dbg!(&input);
     println!("part 1: {}", input.solve1());
+    println!("part 1: {}", input.solve2());
 }
