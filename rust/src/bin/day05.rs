@@ -1,5 +1,6 @@
 use pest::Parser;
 use pest_derive::Parser;
+use std::collections::HashMap;
 
 #[derive(Parser)]
 #[grammar = "bin/day05.pest"]
@@ -29,7 +30,7 @@ impl Range {
     }
 }
 
-#[derive(Debug, PartialEq, Clone, Copy)]
+#[derive(Debug, PartialEq, Eq, Hash, Clone, Copy)]
 enum Kind {
     Seed,
     Soil,
@@ -61,7 +62,7 @@ impl TryFrom<&str> for Kind {
     }
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, Hash, PartialEq, Eq, Clone)]
 struct Value(u64, Kind);
 
 #[derive(Debug)]
@@ -90,6 +91,16 @@ impl Map {
     }
 }
 
+/// Only calculate locations for each value once.
+#[derive(Debug)]
+struct LocationCache(HashMap<Value, Value>);
+
+impl LocationCache {
+    fn new() -> Self {
+        LocationCache(HashMap::new())
+    }
+}
+
 #[derive(Debug)]
 struct Almanac(Vec<Map>);
 
@@ -99,37 +110,38 @@ impl Almanac {
         self.0.iter().filter(|map| map.from == kind).next()
     }
 
-    /// Convert a seed value to a location value.
-    fn seed_to_location(&self, seed: &Value) -> Value {
-        let soil: Value = self
-            .find_map(Kind::Seed)
-            .and_then(|map| Some(map.translate(&seed)))
+    /// Convert a value to a location value.
+    fn to_location(&self, value: &Value) -> Value {
+        let Value(_, kind) = value;
+        let mapped = self
+            .find_map(*kind)
+            .and_then(|map| Some(map.translate(value)))
             .unwrap();
-        let fertilizer: Value = self
-            .find_map(Kind::Soil)
-            .and_then(|map| Some(map.translate(&soil)))
-            .unwrap();
-        let water = self
-            .find_map(Kind::Fertilizer)
-            .and_then(|map| Some(map.translate(&fertilizer)))
-            .unwrap();
-        let light = self
-            .find_map(Kind::Water)
-            .and_then(|map| Some(map.translate(&water)))
-            .unwrap();
-        let temperature = self
-            .find_map(Kind::Light)
-            .and_then(|map| Some(map.translate(&light)))
-            .unwrap();
-        let humidity = self
-            .find_map(Kind::Temperature)
-            .and_then(|map| Some(map.translate(&temperature)))
-            .unwrap();
-        let location = self
-            .find_map(Kind::Humidity)
-            .and_then(|map| Some(map.translate(&humidity)))
-            .unwrap();
-        location
+        match mapped {
+            Value(_, Kind::Location) => mapped,
+            _ => self.to_location(&mapped),
+        }
+    }
+
+    /// Convert a value to a location value, using cached results.
+    fn cached_to_location(&self, cache: &mut LocationCache, value: &Value) -> Value {
+        if let Some(result) = cache.0.get(value) {
+            result.clone()
+        } else {
+            let Value(_, kind) = value;
+            let mapped = self
+                .find_map(*kind)
+                .and_then(|map| Some(map.translate(value)))
+                .unwrap();
+            match mapped {
+                Value(_, Kind::Location) => mapped,
+                _ => {
+                    let result = self.to_location(&mapped);
+                    cache.0.insert(value.clone(), result.clone());
+                    result
+                }
+            }
+        }
     }
 }
 
@@ -141,10 +153,11 @@ struct Input {
 
 impl Input {
     fn solve1(&self) -> u64 {
+        let mut cache = LocationCache::new();
         self.seeds
             .iter()
             .map(|seed| {
-                let Value(quantity, _) = self.almanac.seed_to_location(seed);
+                let Value(quantity, _) = self.almanac.cached_to_location(&mut cache, seed);
                 quantity
             })
             .min()
@@ -273,19 +286,19 @@ fn example01_explanation() {
     let example = include_str!("input/day05/example01.txt");
     let input = Input::try_from(example).unwrap();
     assert_eq!(
-        input.almanac.seed_to_location(&Value(79, Kind::Seed)),
+        input.almanac.to_location(&Value(79, Kind::Seed)),
         Value(82, Kind::Location)
     );
     assert_eq!(
-        input.almanac.seed_to_location(&Value(14, Kind::Seed)),
+        input.almanac.to_location(&Value(14, Kind::Seed)),
         Value(43, Kind::Location)
     );
     assert_eq!(
-        input.almanac.seed_to_location(&Value(55, Kind::Seed)),
+        input.almanac.to_location(&Value(55, Kind::Seed)),
         Value(86, Kind::Location)
     );
     assert_eq!(
-        input.almanac.seed_to_location(&Value(13, Kind::Seed)),
+        input.almanac.to_location(&Value(13, Kind::Seed)),
         Value(35, Kind::Location)
     );
 }
