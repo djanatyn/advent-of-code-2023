@@ -20,8 +20,6 @@ impl Range {
         let start = self.source_start;
         let end = self.source_start + (self.range_length) - 1;
 
-        dbg!(value, start, end);
-
         if start <= value && value <= end {
             let offset = value - self.source_start;
             self.destination_start + offset
@@ -83,7 +81,7 @@ impl Map {
         let result = self
             .ranges
             .iter()
-            .fold(quantity, |quantity, range| range.map(quantity));
+            .fold(quantity, |quantity, range| dbg!(range.map(quantity)));
         Value(result, self.to)
     }
 }
@@ -142,7 +140,6 @@ impl Input {
         self.seeds
             .iter()
             .map(|seed| {
-                dbg!(&seed);
                 let Value(quantity, _) = self.almanac.seed_to_location(seed);
                 dbg!(quantity)
             })
@@ -216,6 +213,55 @@ impl TryFrom<&str> for Input {
         );
         Ok(Self { seeds, almanac })
     }
+}
+
+#[test]
+fn example01_seed14() {
+    let example = include_str!("input/day05/example01.txt");
+    let input = dbg!(Input::try_from(example).unwrap());
+    let seed = Value(14, Kind::Seed);
+    let soil: Value = input
+        .almanac
+        .find_map(Kind::Seed)
+        .and_then(|map| Some(map.translate(&seed)))
+        .unwrap();
+    assert!(matches!(soil, Value(14, Kind::Soil)));
+    let fertilizer: Value = input
+        .almanac
+        .find_map(Kind::Soil)
+        .and_then(|map| Some(map.translate(&soil)))
+        .unwrap();
+    assert!(matches!(fertilizer, Value(53, Kind::Fertilizer)));
+    let water = input
+        .almanac
+        .find_map(Kind::Fertilizer)
+        .and_then(|map| Some(map.translate(&fertilizer)))
+        .unwrap();
+    assert!(matches!(water, Value(49, Kind::Water)));
+    let light = input
+        .almanac
+        .find_map(Kind::Water)
+        .and_then(|map| Some(map.translate(&water)))
+        .unwrap();
+    assert!(matches!(light, Value(42, Kind::Light)));
+    let temperature = input
+        .almanac
+        .find_map(Kind::Light)
+        .and_then(|map| Some(map.translate(&light)))
+        .unwrap();
+    assert!(matches!(temperature, Value(42, Kind::Temperature)));
+    let humidity = input
+        .almanac
+        .find_map(Kind::Temperature)
+        .and_then(|map| Some(map.translate(&temperature)))
+        .unwrap();
+    assert!(matches!(humidity, Value(43, Kind::Humidity)));
+    let location = input
+        .almanac
+        .find_map(Kind::Humidity)
+        .and_then(|map| Some(map.translate(&humidity)))
+        .unwrap();
+    assert!(matches!(location, Value(43, Kind::Location)));
 }
 
 #[test]
