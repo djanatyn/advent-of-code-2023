@@ -72,9 +72,9 @@ struct Map {
 }
 
 impl Map {
-    fn translate(&self, value: Value) -> Value {
+    fn translate(&self, value: &Value) -> Value {
         let quantity: u64 = match value {
-            Value(quantity, kind) if kind == self.from => quantity,
+            Value(quantity, kind) if *kind == self.from => *quantity,
             _ => panic!("invalid mapping"),
         };
         let result = self
@@ -95,34 +95,34 @@ impl Almanac {
     }
 
     /// Convert a seed value to a location value.
-    fn seed_to_location(&self, seed: Value) -> Value {
+    fn seed_to_location(&self, seed: &Value) -> Value {
         let soil: Value = self
             .find_map(Kind::Seed)
-            .and_then(|map| Some(map.translate(seed)))
+            .and_then(|map| Some(map.translate(&seed)))
             .unwrap();
         let fertilizer: Value = self
             .find_map(Kind::Soil)
-            .and_then(|map| Some(map.translate(soil)))
+            .and_then(|map| Some(map.translate(&soil)))
             .unwrap();
         let water = self
             .find_map(Kind::Fertilizer)
-            .and_then(|map| Some(map.translate(fertilizer)))
+            .and_then(|map| Some(map.translate(&fertilizer)))
             .unwrap();
         let light = self
             .find_map(Kind::Water)
-            .and_then(|map| Some(map.translate(water)))
+            .and_then(|map| Some(map.translate(&water)))
             .unwrap();
         let temperature = self
             .find_map(Kind::Light)
-            .and_then(|map| Some(map.translate(light)))
+            .and_then(|map| Some(map.translate(&light)))
             .unwrap();
         let humidity = self
             .find_map(Kind::Temperature)
-            .and_then(|map| Some(map.translate(temperature)))
+            .and_then(|map| Some(map.translate(&temperature)))
             .unwrap();
         let location = self
             .find_map(Kind::Humidity)
-            .and_then(|map| Some(map.translate(humidity)))
+            .and_then(|map| Some(map.translate(&humidity)))
             .unwrap();
         location
     }
@@ -136,7 +136,15 @@ struct Input {
 
 impl Input {
     fn solve1(&self) -> u64 {
-        todo!()
+        self.seeds
+            .iter()
+            .map(|seed| {
+                dbg!(&seed);
+                let Value(quantity, _) = self.almanac.seed_to_location(seed);
+                dbg!(quantity)
+            })
+            .min()
+            .unwrap()
     }
 }
 
@@ -161,7 +169,6 @@ impl TryFrom<&str> for Input {
                 Ok(Value(quantity, Kind::Seed))
             })
             .collect::<Result<Vec<Value>, String>>()?;
-        let map_tokens = input.next().ok_or("missing maps")?;
         let almanac = Almanac(
             input
                 .map(|map| {
