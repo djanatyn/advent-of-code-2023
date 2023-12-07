@@ -1,6 +1,7 @@
 //! TODO: instead of operating on individual seeds, operate on ranges of seeds
 //! TODO: when given a range of seeds, first figure out which maps apply
 //! TODO: when you understand all maps that apply, fold over them (creating new ranges)
+//! TODO: can we collapse the maps? what does the one-pass map look like?
 
 use pest::Parser;
 use pest_derive::Parser;
