@@ -20,7 +20,9 @@ impl Range {
         let start = self.source_start;
         let end = self.source_start + (self.range_length) - 1;
 
-        if start >= value && value >= end {
+        dbg!(value, start, end);
+
+        if start <= value && value <= end {
             let offset = value - self.source_start;
             self.destination_start + offset
         } else {
@@ -61,7 +63,7 @@ impl TryFrom<&str> for Kind {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 struct Value(u64, Kind);
 
 #[derive(Debug)]
@@ -77,6 +79,7 @@ impl Map {
             Value(quantity, kind) if *kind == self.from => *quantity,
             _ => panic!("invalid mapping"),
         };
+        dbg!(&self.from, &self.to);
         let result = self
             .ranges
             .iter()
@@ -213,6 +216,28 @@ impl TryFrom<&str> for Input {
         );
         Ok(Self { seeds, almanac })
     }
+}
+
+#[test]
+fn example01_explanation() {
+    let example = include_str!("input/day05/example01.txt");
+    let input = dbg!(Input::try_from(example).unwrap());
+    assert_eq!(
+        input.almanac.seed_to_location(&Value(79, Kind::Seed)),
+        Value(82, Kind::Location)
+    );
+    assert_eq!(
+        input.almanac.seed_to_location(&Value(14, Kind::Seed)),
+        Value(43, Kind::Location)
+    );
+    assert_eq!(
+        input.almanac.seed_to_location(&Value(55, Kind::Seed)),
+        Value(86, Kind::Location)
+    );
+    assert_eq!(
+        input.almanac.seed_to_location(&Value(13, Kind::Seed)),
+        Value(35, Kind::Location)
+    );
 }
 
 #[test]
