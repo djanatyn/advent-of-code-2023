@@ -33,6 +33,54 @@ impl Range {
             None
         }
     }
+
+    // Check a value range for overlap.
+    //
+    // Returns None for no overlap (meaning no modification to the range).
+    // Returns a new Vec<ValueRange>> for overlap (containing updated ranges,
+    // with offset applied).
+    fn map_range(&self, value_range: &ValueRange, to: Kind) -> Option<Vec<ValueRange>> {
+        let range_end: u64 = (self.source_start + self.range_length - 1);
+        let values_end: u64 = value_range.start + value_range.length - 1;
+        // the values end within the range
+        // <-values->.....
+        // ...<-range->...
+        let right_overlap: bool =
+            value_range.start <= self.source_start && values_end >= self.source_start;
+        // the values start within the range
+        // ...<-values->..
+        // <-range->......
+        let left_overlap: bool = value_range.start <= range_end && values_end >= range_end;
+        // the values are a subset of the range
+        // ...<-values->...
+        // <-...range...->.
+        let within_range: bool = value_range.start > self.source_start && values_end < range_end;
+
+        // the values and range are equivalent
+        let total_overlap: bool = right_overlap && left_overlap;
+
+        if total_overlap {
+            return Some(vec![ValueRange {
+                start: self.destination_start,
+                length: value_range.length,
+                kind: to,
+            }]);
+        }
+        if within_range {
+            return todo!();
+        }
+        if left_overlap {
+            let remaining = todo!();
+            let num_overlap = todo!();
+            return Some(vec![remaining, todo!()]);
+        }
+        if right_overlap {
+            let remaining = todo!();
+            let num_overlap = todo!();
+            return Some(vec![todo!()]);
+        };
+        None
+    }
 }
 
 #[derive(Debug, PartialEq, Eq, Hash, Clone, Copy)]
@@ -79,6 +127,13 @@ impl Value {
 }
 
 #[derive(Debug)]
+struct ValueRange {
+    start: u64,
+    length: u64,
+    kind: Kind,
+}
+
+#[derive(Debug)]
 struct Map {
     from: Kind,
     to: Kind,
@@ -86,6 +141,12 @@ struct Map {
 }
 
 impl Map {
+    /// Returns None is no values within the range are modified.
+    fn translate_range(&self, values: &[ValueRange]) -> Option<Vec<ValueRange>> {
+        let new_ranges: Vec<ValueRange> = Vec::new();
+        todo!()
+    }
+
     fn translate(&self, value: &Value) -> Value {
         let quantity: u64 = match value {
             Value(quantity, kind) if *kind == self.from => *quantity,
@@ -175,19 +236,8 @@ impl Input {
             .unwrap()
     }
 
-    fn part2_seeds(&self) -> Vec<Value> {
-        self.seeds
-            .windows(2)
-            .flat_map(|slice| {
-                if let [start, range] = slice {
-                    let begin = start.quantity();
-                    let end = begin + range.quantity() - 1;
-                    (begin..=end).map(|quantity| Value(quantity, Kind::Seed))
-                } else {
-                    panic!("invalid input")
-                }
-            })
-            .collect()
+    fn part2_seeds(&self) -> Vec<ValueRange> {
+        todo!()
     }
 
     fn solve2(&self) -> u64 {
