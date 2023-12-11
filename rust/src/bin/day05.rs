@@ -55,11 +55,11 @@ impl Range {
         // ...<-values->...
         // <-...range...->.
         let within_range: bool = value_range.start > self.source_start && values_end < range_end;
-
         // the values and range are equivalent
         let total_overlap: bool = right_overlap && left_overlap;
 
         if total_overlap {
+            // TODO: check for left and right remaining
             return Some(vec![ValueRange {
                 start: self.destination_start,
                 length: value_range.length,
