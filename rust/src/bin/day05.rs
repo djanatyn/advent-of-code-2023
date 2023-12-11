@@ -126,12 +126,12 @@ fn value_ranges() {
         vec![
             ValueRange {
                 start: 5,
-                length: 5,
+                length: 4,
                 kind: Kind::Seed
             },
             ValueRange {
-                start: 95,
-                length: 5,
+                start: 100,
+                length: 6,
                 kind: Kind::Soil
             }
         ]
