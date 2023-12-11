@@ -12,17 +12,17 @@ use std::collections::HashMap;
 struct InputParser;
 
 #[derive(Debug)]
-struct Seed(u64);
+struct Seed(i64);
 
 #[derive(Debug)]
 struct Range {
-    destination_start: u64,
-    source_start: u64,
-    range_length: u64,
+    destination_start: i64,
+    source_start: i64,
+    range_length: i64,
 }
 
 impl Range {
-    fn map(&self, value: u64) -> Option<u64> {
+    fn map(&self, value: i64) -> Option<i64> {
         let start = self.source_start;
         let end = self.source_start + (self.range_length) - 1;
 
@@ -40,8 +40,8 @@ impl Range {
     // Returns a new Vec<ValueRange>> for overlap (containing updated ranges,
     // with offset applied).
     fn map_value_range(&self, value_range: &ValueRange, to: Kind) -> Option<Vec<ValueRange>> {
-        let range_end: u64 = (self.source_start + self.range_length - 1);
-        let values_end: u64 = value_range.start + value_range.length - 1;
+        let range_end: i64 = (self.source_start + self.range_length - 1);
+        let values_end: i64 = value_range.start + value_range.length - 1;
         // the values end within the range
         // <-values->.....
         // ...<-range->...
@@ -109,6 +109,35 @@ impl Range {
     }
 }
 
+#[test]
+fn value_ranges() {
+    let range = Range {
+        destination_start: 100,
+        source_start: 10,
+        range_length: 10,
+    };
+    let value_range = ValueRange {
+        start: 5,
+        length: 10,
+        kind: Kind::Seed,
+    };
+    assert_eq!(
+        range.map_value_range(&value_range, Kind::Soil).unwrap(),
+        vec![
+            ValueRange {
+                start: 5,
+                length: 5,
+                kind: Kind::Seed
+            },
+            ValueRange {
+                start: 95,
+                length: 5,
+                kind: Kind::Soil
+            }
+        ]
+    )
+}
+
 #[derive(Debug, PartialEq, Eq, Hash, Clone, Copy)]
 enum Kind {
     Seed,
@@ -142,20 +171,20 @@ impl TryFrom<&str> for Kind {
 }
 
 #[derive(Debug, Hash, PartialEq, Eq, Clone)]
-struct Value(u64, Kind);
+struct Value(i64, Kind);
 
 impl Value {
-    fn quantity(&self) -> u64 {
+    fn quantity(&self) -> i64 {
         match self {
             Value(quantity, _) => *quantity,
         }
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Eq)]
 struct ValueRange {
-    start: u64,
-    length: u64,
+    start: i64,
+    length: i64,
     kind: Kind,
 }
 
@@ -204,7 +233,7 @@ impl Map {
     }
 
     fn translate(&self, value: &Value) -> Value {
-        let quantity: u64 = match value {
+        let quantity: i64 = match value {
             Value(quantity, kind) if *kind == self.from => *quantity,
             _ => panic!("invalid mapping"),
         };
@@ -212,7 +241,7 @@ impl Map {
             .ranges
             .iter()
             .filter_map(|range| range.map(quantity))
-            .collect::<Vec<u64>>();
+            .collect::<Vec<i64>>();
 
         match results.first() {
             Some(result) => Value(*result, self.to),
@@ -282,7 +311,7 @@ struct Input {
 }
 
 impl Input {
-    fn solve1(&self) -> u64 {
+    fn solve1(&self) -> i64 {
         self.seeds
             .iter()
             .map(|seed| match self.almanac.to_location(seed) {
@@ -296,7 +325,7 @@ impl Input {
         todo!()
     }
 
-    fn solve2(&self) -> u64 {
+    fn solve2(&self) -> i64 {
         let mut cache = LocationCache::new();
         todo!()
     }
@@ -318,7 +347,7 @@ impl TryFrom<&str> for Input {
                 let quantity = number
                     .as_str()
                     .trim()
-                    .parse::<u64>()
+                    .parse::<i64>()
                     .map_err(|e| e.to_string())?;
                 Ok(Value(quantity, Kind::Seed))
             })
@@ -338,21 +367,21 @@ impl TryFrom<&str> for Input {
                                 .ok_or("missing destination start")?
                                 .as_str()
                                 .trim()
-                                .parse::<u64>()
+                                .parse::<i64>()
                                 .map_err(|e| e.to_string())?;
                             let source_start = range_tokens
                                 .next()
                                 .ok_or("missing source start")?
                                 .as_str()
                                 .trim()
-                                .parse::<u64>()
+                                .parse::<i64>()
                                 .map_err(|e| e.to_string())?;
                             let range_length = range_tokens
                                 .next()
                                 .ok_or("missing length")?
                                 .as_str()
                                 .trim()
-                                .parse::<u64>()
+                                .parse::<i64>()
                                 .map_err(|e| e.to_string())?;
                             Ok(Range {
                                 destination_start,
