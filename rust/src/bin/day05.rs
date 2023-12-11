@@ -39,7 +39,7 @@ impl Range {
     // Returns None for no overlap (meaning no modification to the range).
     // Returns a new Vec<ValueRange>> for overlap (containing updated ranges,
     // with offset applied).
-    fn map_range(&self, value_range: &ValueRange, to: Kind) -> Option<Vec<ValueRange>> {
+    fn map_value_range(&self, value_range: &ValueRange, to: Kind) -> Option<Vec<ValueRange>> {
         let range_end: u64 = (self.source_start + self.range_length - 1);
         let values_end: u64 = value_range.start + value_range.length - 1;
         // the values end within the range
@@ -67,17 +67,43 @@ impl Range {
             }]);
         }
         if within_range {
-            return todo!();
+            let start_offset = value_range.start - self.source_start;
+            // TODO: off-by-one?
+            return Some(vec![ValueRange {
+                start: self.destination_start + start_offset,
+                length: range_end - values_end,
+                kind: to,
+            }]);
         }
         if left_overlap {
-            let remaining = todo!();
-            let num_overlap = todo!();
-            return Some(vec![remaining, todo!()]);
+            let start_offset = value_range.start - self.source_start;
+            // TODO: off-by-one?
+            let remaining = ValueRange {
+                start: range_end,
+                length: values_end - range_end,
+                kind: value_range.kind,
+            };
+            let overlap = ValueRange {
+                start: self.destination_start + start_offset,
+                length: values_end - value_range.start,
+                kind: to,
+            };
+            return Some(vec![remaining, overlap]);
         }
         if right_overlap {
-            let remaining = todo!();
-            let num_overlap = todo!();
-            return Some(vec![todo!()]);
+            let start_offset = value_range.start - self.source_start;
+            // TODO: off-by-one?
+            let remaining = ValueRange {
+                start: value_range.start,
+                length: self.source_start - value_range.start,
+                kind: value_range.kind,
+            };
+            let overlap = ValueRange {
+                start: self.destination_start + start_offset,
+                length: range_end - values_end,
+                kind: to,
+            };
+            return Some(vec![remaining, overlap]);
         };
         None
     }
@@ -142,9 +168,39 @@ struct Map {
 
 impl Map {
     /// Returns None is no values within the range are modified.
-    fn translate_range(&self, values: &[ValueRange]) -> Option<Vec<ValueRange>> {
-        let new_ranges: Vec<ValueRange> = Vec::new();
-        todo!()
+    fn translate_range(&self, values: &[ValueRange]) -> Vec<ValueRange> {
+        let mut new_ranges: Vec<ValueRange> = Vec::new();
+        for value_range in values {
+            // fold over all ranges
+            let mut results =
+                self.ranges
+                    .iter()
+                    .fold(None, |new: Option<Vec<ValueRange>>, range: &Range| {
+                        if let Some(mut result) = range.map_value_range(value_range, self.to) {
+                            match new {
+                                None => Some(result),
+                                Some(mut older_results) => {
+                                    result.append(&mut older_results);
+                                    Some(result)
+                                }
+                            }
+                        } else {
+                            new
+                        }
+                    });
+            if let Some(mut new) = results {
+                // if any ranges applied, return the new value ranges
+                new_ranges.append(&mut new)
+            } else {
+                // otherwise, the value range is unmodified
+                new_ranges.push(ValueRange {
+                    start: value_range.start,
+                    length: value_range.length,
+                    kind: self.to,
+                });
+            }
+        }
+        new_ranges
     }
 
     fn translate(&self, value: &Value) -> Value {
