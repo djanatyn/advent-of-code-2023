@@ -43,21 +43,14 @@ impl Range {
         let range_end: i64 = (self.source_start + self.range_length - 1);
         let values_end: i64 = value_range.start + value_range.length - 1;
         // the values end within the range
-        // <-values->.....
-        // ...<-range->...
         let right_overlap: bool =
             value_range.start <= self.source_start && values_end >= self.source_start;
         // the values start within the range
-        // ...<-values->..
-        // <-range->......
         let left_overlap: bool = value_range.start <= range_end && values_end >= range_end;
         // the values are a subset of the range
-        // ...<-values->...
-        // <-...range...->.
         let within_range: bool = value_range.start > self.source_start && values_end < range_end;
-        // the values and range are equivalent
+        // the values contain the range
         let total_overlap: bool = right_overlap && left_overlap;
-
         if total_overlap {
             // TODO: check for left and right remaining
             return Some(vec![ValueRange {
